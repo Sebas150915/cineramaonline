@@ -6,9 +6,9 @@
 
 // Rutas base
 define('BASE_PATH', dirname(__DIR__));
-define('BASE_URL', 'http://localhost/cinerama/panel/');
+define('BASE_URL', 'http://localhost/cineramaonline/panel/');
 define('ASSETS_URL', BASE_URL . 'assets/');
-define('UPLOADS_URL', 'http://localhost/cinerama/uploads/');
+define('UPLOADS_URL', 'http://localhost/cineramaonline/uploads/');
 
 // Configuración de errores (Producción)
 error_reporting(0);
