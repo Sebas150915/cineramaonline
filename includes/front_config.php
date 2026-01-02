@@ -8,7 +8,7 @@ date_default_timezone_set('America/Lima');
 
 // Rutas base
 define('BASE_PATH', __DIR__ . '/../');
-define('BASE_URL', 'http://localhost/cinerama/');
+define('BASE_URL', 'http://localhost/cineramaonline/');
 define('UPLOADS_URL', BASE_URL . 'uploads/');
 
 // Incluir configuración de base de datos del Panel
