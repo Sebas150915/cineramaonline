@@ -1,0 +1,9 @@
+[26-Dec-2025 16:37:24 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S02]: Base table or view not found: 1146 Table 'cinerama.tbl_productos' doesn't exist in D:\xampp\htdocs\cinerama\panel\modules\productos\create.php:12
+Stack trace:
+#0 D:\xampp\htdocs\cinerama\panel\modules\productos\create.php(12): PDO->query('SELECT id, nomb...')
+#1 {main}
+  thrown in D:\xampp\htdocs\cinerama\panel\modules\productos\create.php on line 12
+[26-Dec-2025 17:21:21 Europe/Berlin] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'permiso_boleteria' in 'field list'
+[26-Dec-2025 17:21:32 Europe/Berlin] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'permiso_boleteria' in 'field list'
+[26-Dec-2025 17:33:14 Europe/Berlin] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'permiso_boleteria' in 'field list'
+[26-Dec-2025 20:12:19 Europe/Berlin] SQLSTATE[42S22]: Column not found: 1054 Unknown column 'permiso_boleteria' in 'field list'
