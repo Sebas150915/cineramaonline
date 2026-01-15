@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Manejar imagen
     $img = '';
     if (isset($_FILES['img']) && $_FILES['img']['error'] == 0) {
-        $upload_result = uploadImage($_FILES['img'], 'uploads/sliders/');
+        $upload_result = resizeSliderImage($_FILES['img'], 'uploads/sliders/');
         if ($upload_result['success']) {
             $img = $upload_result['filename'];
         } else {
@@ -91,7 +91,7 @@ include '../../includes/sidebar.php';
             <div class="form-group">
                 <label class="required">Imagen del Banner</label>
                 <input type="file" name="img" class="form-control" accept="image/*" required>
-                <small class="form-help">Formatos: JPG, PNG, WEBP. Tamaño recomendado: 1920x600px</small>
+                <small class="form-help">Formatos: JPG, PNG, WEBP. La imagen será redimensionada a 1920x560px con recorte centrado inteligente</small>
             </div>
 
             <div class="form-group">

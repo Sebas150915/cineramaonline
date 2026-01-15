@@ -37,7 +37,7 @@ include 'includes/slider_front.php';
                             <?php echo htmlspecialchars($cine['direccion']); ?>
                         </div>
                         <a href="cartelera_cine.php?id=<?php echo $cine['id']; ?>" class="btn-view-cartelera">
-                            VER CARTELERA
+                            VER CARTELERA <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
                 </div>

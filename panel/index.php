@@ -95,7 +95,7 @@ include './includes/sidebar.php';
             <?php
             try {
                 $stmt = $db->query("
-                    SELECT p.*, g.nombre as genero_nombre, c.nombre as censura_nombre 
+                    SELECT p.*, g.nombre as genero_nombre, c.nombre as censura_nombre, c.codigo as censura_codigo
                     FROM tbl_pelicula p
                     LEFT JOIN tbl_genero g ON p.genero = g.id
                     LEFT JOIN tbl_censura c ON p.censura = c.id
@@ -109,10 +109,11 @@ include './includes/sidebar.php';
             ?>
 
             <?php if (count($peliculas_recientes) > 0): ?>
-                <table class="datatable">
+                <table class="datatable" style="width:100%">
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Poster</th>
                             <th>Título</th>
                             <th>Género</th>
                             <th>Censura</th>
@@ -124,15 +125,36 @@ include './includes/sidebar.php';
                         <?php foreach ($peliculas_recientes as $pelicula): ?>
                             <tr>
                                 <td><?php echo $pelicula['id']; ?></td>
-                                <td><?php echo htmlspecialchars($pelicula['nombre']); ?></td>
+                                <td>
+                                    <?php if (!empty($pelicula['img'])): ?>
+                                        <img src="<?php echo UPLOADS_URL . 'peliculas/' . $pelicula['img']; ?>"
+                                            alt="Poster"
+                                            style="width: 35px; height: 50px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    <?php else: ?>
+                                        <div style="width: 35px; height: 50px; background: #eee; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-film" style="color: #ccc;"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td><strong><?php echo htmlspecialchars($pelicula['nombre']); ?></strong></td>
                                 <td><?php echo htmlspecialchars($pelicula['genero_nombre']); ?></td>
-                                <td><?php echo htmlspecialchars($pelicula['censura_nombre']); ?></td>
+                                <td>
+                                    <?php if (!empty($pelicula['censura_codigo'])): ?>
+                                        <span style="background: #0066cc; color: white; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 11px; min-width: 30px; display: inline-block; text-align: center;">
+                                            <?php echo htmlspecialchars($pelicula['censura_codigo']); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo $pelicula['duracion']; ?></td>
                                 <td>
                                     <?php if ($pelicula['estado'] == '1'): ?>
-                                        <span class="badge badge-success">Activo</span>
+                                        <span style="background: #28a745; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                                            <i class="fas fa-check-circle"></i> Activo
+                                        </span>
                                     <?php else: ?>
-                                        <span class="badge badge-danger">Inactivo</span>
+                                        <span style="background: #dc3545; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 500;">
+                                            <i class="fas fa-times-circle"></i> Inactivo
+                                        </span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -146,4 +168,21 @@ include './includes/sidebar.php';
     </div>
 </main>
 
-<?php include './includes/footer.php'; ?>
+<?php
+$extra_js = '
+<script>
+    $(document).ready(function() {
+        $(".datatable").DataTable({
+            "responsive": true,
+            "paging": false,
+            "info": false,
+            "searching": false,
+            "order": [[ 0, "desc" ]],
+            "language": {
+                "emptyTable": "No hay películas recientes"
+            }
+        });
+    });
+</script>
+';
+include './includes/footer.php'; ?>

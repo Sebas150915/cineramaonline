@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $slider) {
 
     // Manejar nueva imagen
     if (isset($_FILES['img']) && $_FILES['img']['error'] == 0) {
-        $upload_result = uploadImage($_FILES['img'], 'uploads/sliders/');
+        $upload_result = resizeSliderImage($_FILES['img'], 'uploads/sliders/');
         if ($upload_result['success']) {
             // Eliminar imagen anterior si existe
             if ($slider['img']) {
@@ -124,7 +124,7 @@ include '../../includes/sidebar.php';
 
                 <label>Cambiar Imagen</label>
                 <input type="file" name="img" class="form-control" accept="image/*">
-                <small class="form-help">Dejar vacío para mantener la imagen actual</small>
+                <small class="form-help">Dejar vacío para mantener la imagen actual. La nueva imagen será redimensionada a 1920x560px</small>
             </div>
 
             <div class="form-group">
