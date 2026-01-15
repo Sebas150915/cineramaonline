@@ -738,8 +738,8 @@
 </head>
 
 <body>
-    <header id="main-header">
-        <a href="<?php echo BASE_URL; ?>" class="logo">CINERAMA</a>
+    <header id="main-header" style="background: rgba(0,0,0,0.95); padding: 1rem 5%; border-bottom: 1px solid rgba(255,255,255,0.05); height: 90px; align-items: center;">
+        <a href="<?php echo BASE_URL; ?>" class="logo" style="background: none; -webkit-text-fill-color: var(--cinerama-red); color: var(--cinerama-red); font-family: 'Bebas Neue', var(--font-title); font-size: 2.8rem; letter-spacing: 2px;">CINERAMA</a>
 
         <div class="menu-toggle" onclick="toggleMenu()" id="menu-toggle">
             <span></span>
@@ -747,13 +747,35 @@
             <span></span>
         </div>
 
-        <nav id="main-nav">
-            <a href="<?php echo BASE_URL; ?>index.php"><i class="fas fa-film"></i> Cines</a>
-            <a href="<?php echo BASE_URL; ?>cartelera.php"><i class="fas fa-ticket-alt"></i> Cartelera</a>
-            <a href="<?php echo BASE_URL; ?>estrenos.php"><i class="fas fa-star"></i> Próximos Estrenos</a>
-            <a href="<?php echo BASE_URL; ?>contacto.php"><i class="fas fa-envelope"></i> Contacto</a>
+        <nav id="main-nav" style="gap: 40px; margin-left: auto; margin-right: 50px;">
+            <a href="<?php echo BASE_URL; ?>index.php#cines" style="font-size: 0.95rem; font-weight: 600; text-transform: uppercase;">Cines</a>
+            <a href="<?php echo BASE_URL; ?>cartelera.php" style="font-size: 0.95rem; font-weight: 600; text-transform: uppercase;">Cartelera</a>
+            <a href="<?php echo BASE_URL; ?>estrenos.php" style="font-size: 0.95rem; font-weight: 600; text-transform: uppercase;">Estrenos</a>
+            <a href="<?php echo BASE_URL; ?>contacto.php" style="font-size: 0.95rem; font-weight: 600; text-transform: uppercase;">Contáctenos</a>
         </nav>
+
+        <a href="cartelera.php" class="btn-buy-tickets-header" style="background: var(--cinerama-red); color: white; padding: 12px 25px; border-radius: 10px; text-decoration: none; font-weight: 800; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4); transition: all 0.3s; white-space: nowrap;">
+            Comprar Entradas
+        </a>
     </header>
+
+    <style>
+        .btn-buy-tickets-header:hover {
+            background: #ff1a4a;
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(220, 20, 60, 0.6);
+        }
+
+        @media (max-width: 1100px) {
+            #main-nav {
+                display: none;
+            }
+
+            .btn-buy-tickets-header {
+                display: none;
+            }
+        }
+    </style>
 
     <script>
         // Toggle mobile menu

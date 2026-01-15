@@ -166,14 +166,14 @@ include 'includes/slider_front.php';
                                     <?php endforeach; ?>
                                 </div>
 
-                                <div style="margin-top: auto; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="margin-top: auto; padding-top: 25px; display: flex; gap: 15px; align-items: center; width: 100%;">
                                     <?php if (!empty($peli['info']['trailer'])): ?>
-                                        <div class="btn-premium btn-premium-outline" data-trailer="<?php echo $peli['info']['trailer']; ?>" style="width: auto; padding: 8px 20px; font-size: 0.85rem; cursor: pointer;">
+                                        <div class="btn-premium btn-premium-outline" data-trailer="<?php echo $peli['info']['trailer']; ?>" style="flex: 1; padding: 10px; font-size: 0.8rem; cursor: pointer; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
                                             <i class="fab fa-youtube"></i> TRAILER
                                         </div>
                                     <?php endif; ?>
-                                    <a href="pelicula.php?id=<?php echo $peli['info']['id']; ?>" style="color: var(--cinerama-red); text-decoration: none; font-weight: 600; font-size: 0.9rem;">
-                                        MÁS INFORMACIÓN <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
+                                    <a href="pelicula.php?id=<?php echo $peli['info']['id']; ?>" class="btn-premium btn-premium-outline" style="flex: 1; padding: 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--cinerama-red); color: var(--cinerama-red); background: rgba(220, 20, 60, 0.05); text-decoration: none;">
+                                        MÁS INFO <i class="fas fa-chevron-right" style="font-size: 0.7rem; margin-left: 5px;"></i>
                                     </a>
                                 </div>
                             </div>
