@@ -22,11 +22,14 @@ try {
     $stmtFun = $db->prepare("
         SELECT 
             p.id as peli_id, p.nombre as peli_nombre, p.img as peli_img, 
-            p.duracion, p.genero,
+            p.duracion, p.trailer as peli_trailer, g.nombre as genero_nombre,
+            c.codigo as censura_codigo,
             f.id as funcion_id, f.fecha, f.id_sala, 
             h.hora, s.nombre as sala_nombre
         FROM tbl_funciones f
         JOIN tbl_pelicula p ON f.id_pelicula = p.id
+        LEFT JOIN tbl_censura c ON p.censura = c.id
+        LEFT JOIN tbl_genero g ON p.genero = g.id
         JOIN tbl_hora h ON f.id_hora = h.id
         JOIN tbl_sala s ON f.id_sala = s.id
         WHERE s.local = ?
@@ -50,7 +53,9 @@ try {
                     'nombre' => $row['peli_nombre'],
                     'img' => $row['peli_img'],
                     'duracion' => $row['duracion'],
-                    'genero' => $row['genero']
+                    'trailer' => $row['peli_trailer'] ?? '', // Added alias check
+                    'genero' => $row['genero_nombre'],
+                    'censura' => $row['censura_codigo']
                 ],
                 'fechas' => []
             ];
@@ -76,337 +81,285 @@ include 'includes/header_front.php';
 include 'includes/slider_front.php';
 ?>
 
-<div class="container">
-    <div style="text-align: center; margin-bottom: 40px;">
-        <h2 class="section-title" style="margin-bottom: 10px;"><?php echo htmlspecialchars($cine['nombre']); ?></h2>
-        <p style="color: #aaa;"><?php echo htmlspecialchars($cine['direccion']); ?></p>
-    </div>
+<div class="page-dark" style="padding: 60px 0; min-height: 80vh;">
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 50px;">
+            <h1 class="section-title" style="margin-bottom: 15px;"><?php echo htmlspecialchars($cine['nombre']); ?></h1>
+            <p style="color: var(--text-secondary); font-size: 1.1rem;">
+                <i class="fas fa-map-marker-alt" style="color: var(--cinerama-red);"></i>
+                <?php echo htmlspecialchars($cine['direccion']); ?>
+            </p>
+        </div>
 
-    <?php
-    // Extract unique dates for the filter
-    $unique_dates = [];
-    foreach ($cartelera as $p) {
-        foreach (array_keys($p['fechas']) as $f) {
-            $unique_dates[$f] = $f;
+        <?php
+        $unique_dates = [];
+        foreach ($cartelera as $p) {
+            foreach (array_keys($p['fechas']) as $f) {
+                $unique_dates[$f] = $f;
+            }
         }
-    }
-    ksort($unique_dates);
-    ?>
+        ksort($unique_dates);
+        ?>
 
-    <?php if (empty($cartelera)): ?>
-        <div style="text-align: center; padding: 50px; background: #111; border-radius: 10px;">
-            <h3>Lo sentimos</h3>
-            <p>No hay funciones programadas en este cine próximamente.</p>
-            <a href="index.php" class="btn" style="margin-top: 20px;">Ver otros cines</a>
-        </div>
-    <?php else: ?>
+        <?php if (empty($cartelera)): ?>
+            <div style="text-align: center; padding: 100px 0; background: rgba(255,255,255,0.05); border-radius: 20px;">
+                <i class="fas fa-calendar-times" style="font-size: 60px; color: #444; margin-bottom: 20px;"></i>
+                <h3 style="color: white;">Lo sentimos</h3>
+                <p style="color: #888;">No hay funciones programadas en este cine por el momento.</p>
+                <a href="index.php" class="btn-premium btn-premium-red" style="display: inline-flex; width: auto; margin-top: 20px; padding: 12px 30px;">
+                    Ver otros cines
+                </a>
+            </div>
+        <?php else: ?>
 
-        <!-- Date Filter -->
-        <div class="date-selector">
-            <?php $first = true; ?>
-            <?php foreach ($unique_dates as $date): ?>
-                <button class="date-tab <?php echo $first ? 'active' : ''; ?>"
-                    onclick="filterDate('<?php echo $date; ?>', this)">
-                    <span class="day-name">
-                        <?php echo mb_strtoupper(strftime('%a', strtotime($date))); ?>
-                    </span>
-                    <span class="day-num">
-                        <?php echo date('d', strtotime($date)); ?>
-                    </span>
-                </button>
-                <?php $first = false; ?>
-            <?php endforeach; ?>
-        </div>
+            <!-- Date Selector Premium -->
+            <div class="date-selector" style="justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 50px;">
+                <?php $first = true; ?>
+                <?php foreach ($unique_dates as $date): ?>
+                    <button class="date-tab <?php echo $first ? 'active' : ''; ?>"
+                        onclick="filterDate('<?php echo $date; ?>', this)">
+                        <span class="day-name">
+                            <?php echo mb_strtoupper(strftime('%a', strtotime($date))); ?>
+                        </span>
+                        <span class="day-num">
+                            <?php echo date('d', strtotime($date)); ?>
+                        </span>
+                    </button>
+                    <?php $first = false; ?>
+                <?php endforeach; ?>
+            </div>
 
-        <div class="schedule-list">
-            <?php foreach ($cartelera as $peli): ?>
-                <!-- Wrapper for filtering -->
-                <div class="schedule-card movie-card" data-fechas="<?php echo implode(',', array_keys($peli['fechas'])); ?>">
+            <div class="schedule-list">
+                <?php foreach ($cartelera as $peli): ?>
+                    <div class="schedule-card-premium" data-fechas="<?php echo implode(',', array_keys($peli['fechas'])); ?>">
+                        <div class="schedule-card-inner">
+                            <div class="schedule-poster-premium">
+                                <?php
+                                $poster = !empty($peli['info']['img']) ? UPLOADS_URL . 'peliculas/' . $peli['info']['img'] : 'https://via.placeholder.com/400x600?text=Sin+Poster';
+                                ?>
+                                <img src="<?php echo $poster; ?>" alt="<?php echo htmlspecialchars($peli['info']['nombre']); ?>">
+                                <?php if ($peli['info']['censura']): ?>
+                                    <div class="rating-badge"><?php echo htmlspecialchars($peli['info']['censura']); ?></div>
+                                <?php endif; ?>
+                            </div>
 
-                    <!-- Imagen -->
-                    <div class="schedule-poster">
-                        <?php
-                        $poster = !empty($peli['info']['img']) ? UPLOADS_URL . 'peliculas/' . $peli['info']['img'] : 'https://via.placeholder.com/400x600?text=Sin+Poster';
-                        ?>
-                        <img src="<?php echo $poster; ?>" alt="<?php echo htmlspecialchars($peli['info']['nombre']); ?>">
-                    </div>
-
-                    <!-- Info y Horarios -->
-                    <div class="schedule-content">
-                        <h2 class="movie-title"><?php echo htmlspecialchars($peli['info']['nombre']); ?></h2>
-                        <div class="movie-meta">
-                            <span><?php echo htmlspecialchars($peli['info']['duracion']); ?></span> |
-                            <span><?php echo htmlspecialchars($peli['info']['genero']); ?></span>
-                        </div>
-
-                        <div class="dates-container">
-                            <?php foreach ($peli['fechas'] as $fecha => $funciones): ?>
-                                <div class="date-block" data-date="<?php echo $fecha; ?>">
-                                    <!-- Header hidden in day view for cleaner look, or optional -->
-                                    <!-- 
-                                    <div class="date-header">
-                                        <?php echo mb_strtoupper(strftime('%A %d %b', strtotime($fecha))); ?>
-                                    </div> 
-                                    -->
-                                    <div class="times-grid">
-                                        <?php foreach ($funciones as $func): ?>
-                                            <a href="compra_asientos.php?id_funcion=<?php echo $func['id']; ?>" class="time-btn">
-                                                <span class="time"><?php echo $func['hora']; ?></span>
-                                            </a>
-                                        <?php endforeach; ?>
-                                    </div>
+                            <div class="schedule-content-premium">
+                                <h2 class="movie-title-premium" style="font-size: 1.8rem; margin-bottom: 10px;"><?php echo htmlspecialchars($peli['info']['nombre']); ?></h2>
+                                <div class="movie-meta-premium" style="margin-bottom: 25px;">
+                                    <span><i class="far fa-clock"></i> <?php echo substr($peli['info']['duracion'], 0, 5); ?></span>
+                                    <span><i class="fas fa-tag"></i> <?php echo htmlspecialchars($peli['info']['genero']); ?></span>
+                                    <span><i class="fas fa-video"></i> 2D</span>
                                 </div>
-                            <?php endforeach; ?>
+
+                                <div class="dates-container">
+                                    <?php foreach ($peli['fechas'] as $fecha => $funciones): ?>
+                                        <div class="date-block-premium" data-date="<?php echo $fecha; ?>">
+                                            <div class="times-premium-grid">
+                                                <?php foreach ($funciones as $func): ?>
+                                                    <a href="compra_asientos.php?id_funcion=<?php echo $func['id']; ?>" class="time-btn-premium">
+                                                        <span class="time"><?php echo $func['hora']; ?></span>
+                                                        <small class="sala-name"><?php echo htmlspecialchars($func['sala']); ?></small>
+                                                    </a>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                                <div style="margin-top: auto; padding-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                                    <?php if (!empty($peli['info']['trailer'])): ?>
+                                        <div class="btn-premium btn-premium-outline" data-trailer="<?php echo $peli['info']['trailer']; ?>" style="width: auto; padding: 8px 20px; font-size: 0.85rem; cursor: pointer;">
+                                            <i class="fab fa-youtube"></i> TRAILER
+                                        </div>
+                                    <?php endif; ?>
+                                    <a href="pelicula.php?id=<?php echo $peli['info']['id']; ?>" style="color: var(--cinerama-red); text-decoration: none; font-weight: 600; font-size: 0.9rem;">
+                                        MÁS INFORMACIÓN <i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                <?php endforeach; ?>
+            </div>
 
-                </div>
-            <?php endforeach; ?>
-        </div>
-
-    <?php endif; ?>
+        <?php endif; ?>
+    </div>
 </div>
 
 <style>
-    /* Date Selector Params */
     .date-selector {
         display: flex;
         gap: 15px;
         overflow-x: auto;
-        padding-bottom: 20px;
-        margin-bottom: 30px;
-        border-bottom: 1px solid #333;
+        padding: 10px 0 25px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--cinerama-red) transparent;
     }
 
     .date-tab {
-        background: transparent;
-        border: 2px solid #555;
-        color: #aaa;
-        padding: 10px 20px;
-        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #888;
+        padding: 12px 20px;
+        border-radius: 12px;
         cursor: pointer;
         display: flex;
         flex-direction: column;
         align-items: center;
-        min-width: 80px;
-        transition: 0.3s;
+        min-width: 90px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .date-tab.active,
-    .date-tab:hover {
-        border-color: #e50914;
-        color: #fff;
-        background: #e5091420;
+    .date-tab.active {
+        background: var(--gradient-primary);
+        border-color: transparent;
+        color: white;
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(220, 20, 60, 0.3);
+    }
+
+    .date-tab:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: white;
     }
 
     .date-tab .day-name {
-        font-size: 12px;
-        font-weight: bold;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 4px;
     }
 
     .date-tab .day-num {
         font-size: 24px;
-        font-weight: bold;
+        font-weight: 800;
+        font-family: 'Poppins', sans-serif;
     }
 
-    /* List Styles */
     .schedule-list {
         display: flex;
         flex-direction: column;
-        gap: 30px;
+        gap: 40px;
     }
 
-    .schedule-card {
-        background: #fff;
-        /* Using white bg as per previous preference, or distinct card style */
-        /* Actually previous was #fff, let's keep it but improve spacing */
-        border-radius: 8px;
+    .schedule-card-premium {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 20px;
         overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .schedule-card-premium:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(220, 20, 60, 0.3);
+        transform: translateX(5px);
+    }
+
+    .schedule-card-inner {
         display: flex;
-        /* Default flex row for desktop */
-        flex-direction: row;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .schedule-poster-premium {
+        width: 200px;
+        aspect-ratio: 2/3;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .schedule-poster-premium img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .schedule-content-premium {
+        padding: 35px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .times-premium-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .time-btn-premium {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-decoration: none !important;
+        text-align: center;
+        min-width: 100px;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .time-btn-premium:hover {
+        background: var(--cinerama-red);
+        border-color: var(--cinerama-red);
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(220, 20, 60, 0.4);
+    }
+
+    .time-btn-premium .time {
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .time-btn-premium .sala-name {
+        font-size: 10px;
+        opacity: 0.6;
+        margin-top: 2px;
+        text-transform: uppercase;
     }
 
     @media (max-width: 768px) {
-        .schedule-card {
+        .schedule-card-inner {
             flex-direction: column;
         }
-    }
 
-    .times-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 15px;
-    }
+        .schedule-poster-premium {
+            width: 100%;
+            height: 350px;
+        }
 
-    .time-btn {
-        display: inline-block;
-        padding: 8px 16px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background-color: #fff;
-        color: #333;
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all 0.2s ease;
-    }
-
-    .time-btn:hover {
-        background-color: #e50914;
-        /* Brand red */
-        color: #fff;
-        border-color: #e50914;
-        text-decoration: none;
-        transform: translateY(-2px);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        .schedule-content-premium {
+            padding: 25px;
+        }
     }
 </style>
 
 <script>
     function filterDate(date, tabElement) {
-        // 1. Update Tabs
         document.querySelectorAll('.date-tab').forEach(el => el.classList.remove('active'));
         if (tabElement) tabElement.classList.add('active');
 
-        // 2. Filter Movies
-        document.querySelectorAll('.movie-card').forEach(card => {
+        document.querySelectorAll('.schedule-card-premium').forEach(card => {
             const movieDates = card.dataset.fechas.split(',');
-            const dateBlocks = card.querySelectorAll('.date-block');
+            const dateBlocks = card.querySelectorAll('.date-block-premium');
 
-            // Check if movie has the selected date
             if (movieDates.includes(date)) {
-                card.style.display = 'flex'; // Show movie
-
-                // Filter inner date blocks
+                card.style.display = 'block';
                 dateBlocks.forEach(block => {
-                    if (block.dataset.date === date) {
-                        block.style.display = 'block';
-                    } else {
-                        block.style.display = 'none';
-                    }
+                    block.style.display = (block.dataset.date === date) ? 'block' : 'none';
                 });
             } else {
-                card.style.display = 'none'; // Hide movie completely
+                card.style.display = 'none';
             }
         });
     }
 
-    // Init with first date
     document.addEventListener('DOMContentLoaded', () => {
         const firstTab = document.querySelector('.date-tab');
-        if (firstTab) {
-            // Manually trigger click or call logic. 
-            // We need to parse the onclick attribute or just extract date.
-            // Simpler: Just click it.
-            firstTab.click();
-        }
+        if (firstTab) firstTab.click();
     });
 </script>
-border-radius: 8px;
-overflow: hidden;
-display: flex;
-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-color: #333;
-}
-
-.schedule-poster {
-width: 150px;
-flex-shrink: 0;
-}
-
-.schedule-poster img {
-width: 100%;
-height: 100%;
-object-fit: cover;
-display: block;
-}
-
-.schedule-content {
-padding: 20px;
-flex-grow: 1;
-}
-
-.movie-title {
-margin: 0 0 5px 0;
-font-size: 22px;
-color: #000;
-}
-
-.movie-meta {
-color: #666;
-font-size: 14px;
-margin-bottom: 20px;
-}
-
-.dates-container {
-display: flex;
-flex-direction: column;
-gap: 15px;
-}
-
-.date-block {
-border-bottom: 1px solid #eee;
-padding-bottom: 15px;
-}
-
-.date-block:last-child {
-border-bottom: none;
-}
-
-.date-header {
-font-weight: bold;
-color: #e50914;
-margin-bottom: 10px;
-font-size: 14px;
-text-transform: uppercase;
-}
-
-.times-grid {
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-}
-
-.time-btn {
-display: inline-block;
-padding: 8px 16px;
-background: #fff;
-border: 1px solid #ccc;
-border-radius: 4px;
-text-decoration: none;
-color: #333;
-font-size: 14px;
-transition: 0.2s;
-text-align: center;
-}
-
-.time-btn:hover {
-background: #e50914;
-color: #fff;
-border-color: #e50914;
-}
-
-.time-btn .time {
-font-weight: bold;
-}
-
-@media (max-width: 600px) {
-.schedule-card {
-flex-direction: column;
-}
-
-.schedule-poster {
-width: 100%;
-height: 200px;
-}
-
-.schedule-poster img {
-object-fit: cover;
-}
-}
-</style>
 
 <?php include 'includes/footer_front.php'; ?>

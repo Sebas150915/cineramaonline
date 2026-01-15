@@ -9,285 +9,279 @@ try {
 
 if (!empty($slides)):
 ?>
-    <div class="main-slider-container">
-        <div class="main-slider">
+    <section class="premium-hero-slider">
+        <div class="hero-carousel">
             <?php foreach ($slides as $index => $slide): ?>
                 <?php
                 $imgUrl = UPLOADS_URL . 'sliders/' . $slide['img'];
-                // Fallback if needed or just use as is. 
-                // Assuming UPLOADS_URL is defined in front_config.php
-
                 $activeClass = ($index === 0) ? 'active' : '';
                 ?>
-                <div class="slide-item <?php echo $activeClass; ?>">
-                    <?php if (!empty($slide['link'])): ?>
-                        <a href="<?php echo htmlspecialchars($slide['link']); ?>">
-                            <img src="<?php echo $imgUrl; ?>" alt="<?php echo htmlspecialchars($slide['titulo']); ?>">
-                        </a>
-                    <?php else: ?>
-                        <img src="<?php echo $imgUrl; ?>" alt="<?php echo htmlspecialchars($slide['titulo']); ?>">
-                    <?php endif; ?>
+                <div class="hero-slide <?php echo $activeClass; ?>" data-index="<?php echo $index; ?>">
+                    <div class="hero-img-wrap">
+                        <img src="<?php echo $imgUrl; ?>" alt="<?php echo htmlspecialchars($slide['titulo']); ?>" class="hero-bg-img">
+                        <div class="hero-vignette"></div>
+                        <div class="hero-glow-bottom"></div>
+                    </div>
 
-                    <?php if (!empty($slide['titulo'])): ?>
-                        <!-- Optional caption if needed -->
-                        <!-- <div class="slide-caption"><?php echo htmlspecialchars($slide['titulo']); ?></div> -->
-                    <?php endif; ?>
+                    <div class="container hero-content-wrap">
+                        <div class="hero-text-area">
+                            <span class="hero-label-premium">EXCLUSIVO EN CINERAMA</span>
+                            <h1 class="hero-title-premium"><?php echo htmlspecialchars($slide['titulo']); ?></h1>
+                            <p class="hero-subtitle-premium">Vive la mejor experiencia en la pantalla gigante</p>
+
+                            <div class="hero-actions-premium">
+                                <a href="<?php echo !empty($slide['link']) ? htmlspecialchars($slide['link']) : 'cartelera.php'; ?>" class="btn-premium-red">
+                                    <i class="fas fa-ticket-alt"></i> COMPRAR ENTRADAS
+                                </a>
+                                <button class="btn-premium-outline" data-trailer="dQw4w9WgXcQ">
+                                    <i class="fas fa-play"></i> VER TRAILER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <!-- Controls (Optional) -->
-        <button class="slider-nav prev" onclick="moveSlide(-1)">&#10094;</button>
-        <button class="slider-nav next" onclick="moveSlide(1)">&#10095;</button>
-
-        <!-- Dots -->
-        <div class="slider-dots">
+        <!-- Progress Indicators -->
+        <div class="hero-indicators-premium">
             <?php foreach ($slides as $index => $slide): ?>
-                <span class="dot <?php echo ($index === 0) ? 'active' : ''; ?>" onclick="currentSlide(<?php echo $index; ?>)"></span>
+                <div class="indicator-bar <?php echo ($index === 0) ? 'active' : ''; ?>" onclick="goToSlide(<?php echo $index; ?>)">
+                    <div class="indicator-progress"></div>
+                </div>
             <?php endforeach; ?>
         </div>
-    </div>
+    </section>
 
     <style>
-        .main-slider-container {
+        .premium-hero-slider {
             position: relative;
-            max-width: 100%;
-            margin: 0 auto;
-            overflow: hidden;
+            height: 90vh;
+            width: 100%;
             background: #000;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            margin-top: -80px;
+            /* Pull up under transparent header */
         }
 
-        .main-slider {
+        .hero-carousel {
             position: relative;
-            width: 100%;
-            height: 600px;
-        }
-
-        .slide-item {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
             height: 100%;
-            opacity: 0;
-            transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 100%;
         }
 
-        .slide-item.active {
-            opacity: 1;
-            z-index: 1;
-        }
-
-        .slide-item::after {
-            content: '';
+        .hero-slide {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(180deg,
-                    transparent 0%,
-                    transparent 40%,
-                    rgba(0, 0, 0, 0.3) 70%,
-                    rgba(0, 0, 0, 0.7) 100%);
-            pointer-events: none;
+            inset: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1;
         }
 
-        .slide-item img {
+        .hero-slide.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 2;
+        }
+
+        .hero-img-wrap {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+
+        .hero-bg-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: center;
-            animation: kenBurns 20s ease-out infinite alternate;
-        }
-
-        @keyframes kenBurns {
-            0% {
-                transform: scale(1);
-            }
-
-            100% {
-                transform: scale(1.1);
-            }
-        }
-
-        .slide-item.active img {
-            animation: kenBurns 20s ease-out infinite alternate;
-        }
-
-        /* Navigation Buttons */
-        .slider-nav {
-            cursor: pointer;
-            position: absolute;
-            top: 50%;
-            width: auto;
-            padding: 1.2rem 1rem;
-            margin-top: -30px;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 8px;
-            user-select: none;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 10;
-            opacity: 0.7;
-        }
-
-        .slider-nav.prev {
-            left: 20px;
-        }
-
-        .slider-nav.next {
-            right: 20px;
-        }
-
-        .slider-nav:hover {
-            background: rgba(220, 20, 60, 0.8);
-            opacity: 1;
             transform: scale(1.1);
-            box-shadow: 0 8px 20px rgba(220, 20, 60, 0.4);
+            transition: transform 10s linear;
         }
 
-        /* Dots */
-        .slider-dots {
+        .hero-slide.active .hero-bg-img {
+            transform: scale(1);
+        }
+
+        .hero-vignette {
             position: absolute;
-            bottom: 30px;
-            width: 100%;
-            text-align: center;
-            z-index: 10;
+            inset: 0;
+            background: linear-gradient(to right,
+                    rgba(10, 10, 10, 0.9) 0%,
+                    rgba(10, 10, 10, 0.4) 40%,
+                    transparent 70%),
+                linear-gradient(to top,
+                    rgba(10, 10, 10, 0.9) 0%,
+                    transparent 30%);
+            z-index: 2;
         }
 
-        .dot {
-            cursor: pointer;
-            height: 12px;
-            width: 12px;
-            margin: 0 6px;
-            background-color: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(5px);
+        .hero-glow-bottom {
+            position: absolute;
+            bottom: -50px;
+            left: 20%;
+            width: 40%;
+            height: 100px;
+            background: rgba(220, 38, 38, 0.3);
+            filter: blur(80px);
             border-radius: 50%;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .hero-content-wrap {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-text-area {
+            max-width: 800px;
+            transform: translateX(-30px);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) 0.5s;
+        }
+
+        .hero-slide.active .hero-text-area {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .hero-label-premium {
             display: inline-block;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: var(--cinerama-red);
+            font-weight: 800;
+            letter-spacing: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(220, 38, 38, 0.3);
         }
 
-        .dot.active {
-            background: linear-gradient(135deg, #DC143C 0%, #FF6B6B 100%);
-            width: 40px;
-            border-radius: 6px;
-            border-color: rgba(220, 20, 60, 0.8);
-            box-shadow: 0 0 15px rgba(220, 20, 60, 0.6);
+        .hero-title-premium {
+            font-size: 6rem;
+            line-height: 0.9;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
-        .dot:hover {
-            background-color: rgba(255, 255, 255, 0.7);
-            transform: scale(1.2);
+        .hero-subtitle-premium {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 500px;
+            font-weight: 400;
+        }
+
+        .hero-indicators-premium {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 20;
+        }
+
+        .indicator-bar {
+            width: 80px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: background 0.3s;
+        }
+
+        .indicator-bar.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .indicator-progress {
+            height: 100%;
+            width: 0;
+            background: var(--cinerama-red);
+            transition: width 5s linear;
+        }
+
+        .indicator-bar.active .indicator-progress {
+            width: 100%;
+        }
+
+        @media (max-width: 992px) {
+            .hero-title-premium {
+                font-size: 4rem;
+            }
+
+            .hero-subtitle-premium {
+                font-size: 1.2rem;
+            }
         }
 
         @media (max-width: 768px) {
-            .main-slider {
-                height: 400px;
+            .hero-title-premium {
+                font-size: 3rem;
             }
 
-            .slider-nav {
-                padding: 0.8rem 0.7rem;
-                font-size: 18px;
-                opacity: 0.9;
+            .hero-subtitle-premium {
+                display: none;
             }
 
-            .slider-nav.prev {
-                left: 10px;
+            .premium-hero-slider {
+                height: 60vh;
             }
 
-            .slider-nav.next {
-                right: 10px;
+            .hero-text-area {
+                text-align: center;
+                margin: 0 auto;
+                transform: translateY(30px) !important;
             }
 
-            .slider-dots {
-                bottom: 20px;
+            .hero-slide.active .hero-text-area {
+                transform: translateY(0) !important;
             }
 
-            .dot {
-                height: 10px;
-                width: 10px;
-                margin: 0 4px;
-            }
-
-            .dot.active {
-                width: 30px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .main-slider {
-                height: 300px;
-            }
-
-            .slider-nav {
-                padding: 0.6rem 0.5rem;
-                font-size: 16px;
+            .hero-vignette {
+                background: linear-gradient(to top,
+                        rgba(10, 10, 10, 0.95) 0%,
+                        rgba(10, 10, 10, 0.4) 50%,
+                        rgba(10, 10, 10, 0.9) 100%);
             }
         }
     </style>
 
     <script>
-        let slideIndex = 0;
-        const slides = document.querySelectorAll(".slide-item");
-        const dots = document.querySelectorAll(".dot");
-        let slideInterval;
+        let currentSlideIndex = 0;
+        const heroSlides = document.querySelectorAll('.hero-slide');
+        const indicatorBars = document.querySelectorAll('.indicator-bar');
+        let slideTimer;
 
-        function showSlides(n) {
-            if (n >= slides.length) {
-                slideIndex = 0
-            }
-            if (n < 0) {
-                slideIndex = slides.length - 1
-            }
+        function goToSlide(index) {
+            heroSlides.forEach(s => s.classList.remove('active'));
+            indicatorBars.forEach(b => b.classList.remove('active'));
 
-            // Hide all
-            slides.forEach(slide => slide.classList.remove("active"));
-            dots.forEach(dot => dot.classList.remove("active"));
+            heroSlides[index].classList.add('active');
+            indicatorBars[index].classList.add('active');
+            currentSlideIndex = index;
 
-            // Show new
-            slides[slideIndex].classList.add("active");
-            dots[slideIndex].classList.add("active");
+            startSlideTimer();
         }
 
-        function moveSlide(n) {
-            slideIndex += n;
-            showSlides(slideIndex);
-            resetTimer();
+        function nextSlide() {
+            let next = (currentSlideIndex + 1) % heroSlides.length;
+            goToSlide(next);
         }
 
-        function currentSlide(n) {
-            slideIndex = n;
-            showSlides(slideIndex);
-            resetTimer();
-        }
-
-        function startTimer() {
-            slideInterval = setInterval(() => {
-                slideIndex++;
-                showSlides(slideIndex);
-            }, 5000); // 5 seconds
-        }
-
-        function resetTimer() {
-            clearInterval(slideInterval);
-            startTimer();
+        function startSlideTimer() {
+            clearInterval(slideTimer);
+            slideTimer = setInterval(nextSlide, 5000);
         }
 
         // Initialize
-        if (slides.length > 0) {
-            startTimer();
-        }
+        document.addEventListener('DOMContentLoaded', startSlideTimer);
     </script>
 <?php endif; ?>

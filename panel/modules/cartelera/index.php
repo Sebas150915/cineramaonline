@@ -5,6 +5,16 @@ $page_title = "Gestión de Cartelera";
 include '../../includes/header.php';
 include '../../includes/sidebar.php';
 
+// Filtros
+$fecha_inicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : date('Y-m-d');
+$fecha_fin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : date('Y-m-d');
+
+// Si se presiona "Limpiar", mostramos todo (esto se puede manejar enviando un parámetro vacío o detectando el reset)
+if (isset($_GET['clear'])) {
+    $fecha_inicio = '';
+    $fecha_fin = '';
+}
+
 // Obtener cartelera con relaciones
 try {
     $sql = "SELECT c.*, p.nombre as pelicula_nombre, p.img as pelicula_img, l.nombre as cine_nombre, s.nombre as sala_nombre 
@@ -12,8 +22,22 @@ try {
             JOIN tbl_pelicula p ON c.pelicula = p.id 
             JOIN tbl_locales l ON c.local = l.id 
             LEFT JOIN tbl_sala s ON c.sala = s.id 
-            ORDER BY c.fecha_inicio DESC, l.nombre ASC";
-    $stmt = $db->query($sql);
+            WHERE 1=1";
+
+    $params = [];
+    if ($fecha_inicio) {
+        $sql .= " AND c.fecha_inicio >= ?";
+        $params[] = $fecha_inicio;
+    }
+    if ($fecha_fin) {
+        $sql .= " AND c.fecha_fin <= ?";
+        $params[] = $fecha_fin;
+    }
+
+    $sql .= " ORDER BY c.fecha_inicio DESC, l.nombre ASC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
     $carteleras = $stmt->fetchAll();
 } catch (PDOException $e) {
     $carteleras = [];
@@ -29,13 +53,40 @@ try {
             <p class="page-subtitle">Programación de películas en cines</p>
         </div>
         <div>
-            <a href="export_excel.php" class="btn btn-success" target="_blank">
+            <a href="export_excel.php?<?php echo http_build_query($_GET); ?>" class="btn btn-success" target="_blank">
                 <i class="fas fa-file-excel"></i> Exportar Excel
             </a>
             <a href="create.php" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nueva Programación
             </a>
         </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-3" style="padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <form method="GET" class="row align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" style="font-weight: 600; font-size: 0.9rem;">Fecha Inicio</label>
+                <input type="date" name="fecha_inicio" class="form-control" value="<?php echo $fecha_inicio; ?>">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" style="font-weight: 600; font-size: 0.9rem;">Fecha Fin</label>
+                <input type="date" name="fecha_fin" class="form-control" value="<?php echo $fecha_fin; ?>">
+            </div>
+            <div class="col-md-6">
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="window.location.href='?fecha_inicio=<?php echo date('Y-m-d'); ?>&fecha_fin=<?php echo date('Y-m-d'); ?>'">
+                        <i class="fas fa-calendar-day"></i> Hoy
+                    </button>
+                    <a href="index.php?clear=1" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i> Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
     </div>
 
     <div class="table-container">

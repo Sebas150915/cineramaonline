@@ -15,6 +15,15 @@ header("Expires: 0");
 
 echo "\xEF\xBB\xBF"; // BOM for UTF-8
 
+// Filtros
+$fecha_inicio = isset($_GET['fecha_inicio']) ? $_GET['fecha_inicio'] : date('Y-m-d');
+$fecha_fin = isset($_GET['fecha_fin']) ? $_GET['fecha_fin'] : date('Y-m-d');
+
+if (isset($_GET['clear'])) {
+    $fecha_inicio = '';
+    $fecha_fin = '';
+}
+
 // 1. Obtener todas las carteleras ACTIVAS con todas las relaciones y los 6 horarios
 try {
     $sql = "SELECT 
@@ -30,6 +39,7 @@ try {
                 p.duracion,
                 c.fecha_inicio,
                 c.fecha_fin,
+                h1.hora as x1,
                 h1.hora as hora_f1,
                 h2.hora as hora_f2,
                 h3.hora as hora_f3,
@@ -48,10 +58,22 @@ try {
             LEFT JOIN tbl_hora h4 ON c.id_hora_f4 = h4.id
             LEFT JOIN tbl_hora h5 ON c.id_hora_f5 = h5.id
             LEFT JOIN tbl_hora h6 ON c.id_hora_f6 = h6.id
-            WHERE c.estado = '1'
-            ORDER BY l.orden ASC, l.nombre ASC, s.nombre ASC, c.fecha_inicio ASC";
+            WHERE c.estado = '1'";
 
-    $stmt = $db->query($sql);
+    $params = [];
+    if ($fecha_inicio) {
+        $sql .= " AND c.fecha_inicio >= ?";
+        $params[] = $fecha_inicio;
+    }
+    if ($fecha_fin) {
+        $sql .= " AND c.fecha_fin <= ?";
+        $params[] = $fecha_fin;
+    }
+
+    $sql .= " ORDER BY l.orden ASC, l.nombre ASC, s.nombre ASC, c.fecha_inicio ASC";
+
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
     $raw_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Error DB: " . $e->getMessage());

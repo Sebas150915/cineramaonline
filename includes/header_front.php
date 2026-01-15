@@ -549,6 +549,191 @@
                 font-size: 0.85rem;
             }
         }
+
+        /* ========================================
+           CINEMARK STYLE - PREMIUM MOVIE CARDS
+        ======================================== */
+        .page-dark {
+            background-color: var(--bg-primary) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 20px 0;
+        }
+
+        .movie-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(220, 20, 60, 0.3);
+        }
+
+        .movie-poster-container {
+            position: relative;
+            aspect-ratio: 2/3;
+            overflow: hidden;
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .movie-card:hover .movie-poster {
+            transform: scale(1.1);
+        }
+
+        .rating-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 102, 204, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 14px;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+        }
+
+        .duration-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .movie-info-premium {
+            padding: 20px;
+            background: #1a1a1a;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .movie-title-premium {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            line-height: 1.3;
+            letter-spacing: 0.5px;
+        }
+
+        .movie-meta-premium {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+            color: #b3b3b3;
+            margin-bottom: 15px;
+        }
+
+        .movie-meta-premium span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .movie-actions-premium {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-premium {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 12px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-premium-red {
+            background: var(--cinerama-red);
+            color: white;
+        }
+
+        .btn-premium-red:hover {
+            background: #ff1a4a;
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4);
+        }
+
+        .btn-premium-outline {
+            background: transparent;
+            border: 1.5px solid #444;
+            color: #eee;
+        }
+
+        .btn-premium-outline:hover {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .estreno-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            color: black;
+            text-align: center;
+            padding: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 1px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .movie-card:hover .estreno-label {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 480px) {
+            .movie-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
     </style>
 </head>
 
