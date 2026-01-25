@@ -754,9 +754,6 @@
             <a href="<?php echo BASE_URL; ?>contacto.php" style="font-size: 0.95rem; font-weight: 600; text-transform: uppercase;">Contáctenos</a>
         </nav>
 
-        <a href="cartelera.php" class="btn-buy-tickets-header" style="background: var(--cinerama-red); color: white; padding: 12px 25px; border-radius: 10px; text-decoration: none; font-weight: 800; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4); transition: all 0.3s; white-space: nowrap;">
-            Comprar Entradas
-        </a>
     </header>
 
     <style>

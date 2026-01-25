@@ -7,10 +7,10 @@
 
 class Database
 {
-    private $host = "localhost";
+    private $host = "161.132.39.31";
     private $db_name = "cinerama";
-    private $username = "root";
-    private $password = "ajjm2123";
+    private $username = "cinerama";
+    private $password = "yJxHkdK5xiMrRkrT";
     private $charset = "utf8mb4";
     public $conn;
 
