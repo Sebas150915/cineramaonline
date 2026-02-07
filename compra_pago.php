@@ -47,7 +47,7 @@ try {
 $page_title = "Pago y Datos";
 include 'includes/header_front.php';
 ?>
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <div class="container">
     <h2 class="section-title">Finalizar Compra</h2>
     <div style="text-align: right; color: #555; font-size: 14px; margin-bottom: 10px;">
@@ -129,15 +129,64 @@ include 'includes/header_front.php';
                 </div>
 
                 <!-- 2. Datos del Cliente -->
-                <div class="card" style="padding: 20px; margin-bottom: 30px;">
-                    <h3 class="card-title">2. Tus Datos</h3>
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label>Nombre Completo</label>
-                        <input type="text" name="cliente_nombre" required style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: none;">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label>DNI / RUC</label>
-                        <input type="text" name="cliente_doc" required style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: none;">
+
+<div class="card" style="padding: 20px; margin-bottom: 30px;">
+    <h3 class="card-title">Registrar mis datos</h3>
+    <div class="btn-group w-100 mt-3" role="group" aria-label="Opciones de registro">
+        <input type="radio" class="btn-check" name="ingresar_datos" id="ingresar_datos_si" value="si" checked autocomplete="off">
+        <label class="btn btn-outline-danger" for="ingresar_datos_si">Sí, deseo ingresar mis datos</label>
+
+        <input type="radio" class="btn-check" name="ingresar_datos" id="ingresar_datos_no" value="no" autocomplete="off">
+        <label class="btn btn-outline-secondary" for="ingresar_datos_no">No, continuar como invitado</label>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const radios = document.querySelectorAll('input[name="ingresar_datos"]');
+        const divDatos = document.getElementById('divdatosclientes');
+        
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'si') {
+                    divDatos.style.display = 'block';
+                } else {
+                    divDatos.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
+<div class="card" id="divdatosclientes" style="padding: 20px; margin-bottom: 30px;">
+<h3 class="card-title">2. Tus Datos</h3>
+
+<div class="form-group" style="margin-bottom: 15px;">
+<label>DNI / RUC</label>
+
+<div class="input-group mb-3">
+
+<select class="form-select" id="tipodocumento" style="max-width: 150px;" >
+  <option selected value="DNI" >DNI</option>
+  <option value="RUC" >RUC</option>
+
+</select>
+
+  <input type="text" class="form-control" name="cliente_doc" id="cliente_doc" aria-describedby="basic-addon2">
+  <div class="input-group-append">
+<button type="button" class="btn btn-outline-danger" onclick="buscardatos()" ><i class="fa fa-search"></i> Buscar</button>
+  </div>
+</div>
+
+<div class="form-group" style="margin-bottom: 15px;">
+<label>Nombre Completo</label>
+<input type="text" name="cliente_nombre" id="cliente_nombre" class="form-control" >
+<input type="hidden" name="direccioncliente" id="direccioncliente" class="form-control" >
+</div>
+
+
+
+
                     </div>
                     <div class="form-group">
                         <label>Tipo Comprobante</label>
@@ -149,7 +198,7 @@ include 'includes/header_front.php';
                 </div>
 
                 <!-- 3. Medio de Pago -->
-                <div class="card" style="padding: 20px;">
+                <div class="card" style="padding: 20px; display:none;">
                     <h3 class="card-title">3. Pago</h3>
                     <div style="display: flex; gap: 20px;">
                         <!-- Ocultamos YAPE por solicitud del usuario "lo de yape no lo consideres" -->
@@ -182,7 +231,8 @@ include 'includes/header_front.php';
                         Total: S/ <span id="total-amount">0.00</span>
                     </div>
 
-                    <button type="submit" id="btn-confirmar" class="btn" style="width: 100%; margin-top: 20px; font-size: 18px;" disabled>CONFIRMAR PAGO</button>
+<button type="button" id="btn-confirmar" class="btn btn-danger w-100" disabled >CONFIRMAR PAGO</button>
+
 
                     <p style="font-size: 12px; color: #666; margin-top: 10px; text-align: center;">
                         Tienes 10 minutos para completar tu compra.
@@ -193,6 +243,9 @@ include 'includes/header_front.php';
         </div>
     </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 
 <style>
     .btn-counter {
@@ -216,6 +269,46 @@ include 'includes/header_front.php';
 </style>
 
 <script>
+
+
+function buscardatos(){
+		
+var tipodocumento=$("#tipodocumento").val();
+var cliente_doc=$("#cliente_doc").val();
+
+var rutaws='http://smartbase.club/webservices/dni.php?dni='+cliente_doc;
+
+if(tipodocumento=='RUC'){
+var rutaws='https://www.smartbase.club/sunat/ruc2.php?ruc='+cliente_doc+'&api_key=5000';
+}
+
+	$.ajax({
+		url: rutaws,
+	    type: "GET",
+	    success: function(datos) {
+
+
+console.log(datos);
+if(tipodocumento=='DNI'){
+var nombre=datos.apellidoPaterno+' '+datos.apellidoMaterno+' '+datos.nombres
+$("#cliente_nombre").val(nombre);
+}else{
+$("#cliente_nombre").val(datos.razon_social);
+$("#direccioncliente").val(datos.direccion);
+}
+
+}
+	});
+	
+
+
+	
+}
+
+
+
+
+
     const totalSeats = <?php echo count($asientosDetalle); ?>;
     const seatIds = <?php echo json_encode($seatIds); ?>;
     // Object to track counts per tariff
@@ -356,6 +449,92 @@ include 'includes/header_front.php';
             btn.disabled = true;
             document.getElementById('remaining-alert').style.display = 'block';
         }
+    }
+</script>
+
+<!-- Niubiz Integration -->
+<script src="https://static-content-qas.vnforapps.com/v2/js/checkout.js?qa=true"></script>
+<script>
+    document.getElementById('btn-confirmar').addEventListener('click', function(e) {
+        const medioPago = document.querySelector('input[name="medio_pago"]:checked');
+        if (medioPago && medioPago.value === 'TARJETA') {
+            e.preventDefault();
+            initNiubizPayment();
+        }
+    });
+
+    function initNiubizPayment() {
+        const btn = document.getElementById('btn-confirmar');
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+
+        // Check user decision
+        const ingresarDatos = document.querySelector('input[name="ingresar_datos"]:checked').value;
+
+        if (ingresarDatos === 'si') {
+            // Client Side Validation
+            if (!formData.get('cliente_nombre') || !formData.get('cliente_doc')) {
+                 Swal.fire({
+                    text: 'Por favor ingrese su Nombre y DNI/RUC para continuar.',
+                    icon: 'info',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+        } else {
+            // Default data for anonymous checkout
+            formData.set('cliente_nombre', 'Cliente General');
+            formData.set('cliente_doc', '00000000');
+            formData.set('tipo_comprobante', 'BOLETA');
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'Cargando Niubiz...';
+
+        // Call backend to get Session Token
+        fetch('api/get_niubiz_token.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Configure Niubiz
+                VisanetCheckout.configure({
+                    sessiontoken: data.sessionKey,
+                    channel: data.channel,
+                    merchantid: data.merchantId,
+                    purchasenumber: data.purchaseNumber,
+                    amount: data.amount,
+                    expirationminutes: '5',
+                    timeouturl: '<?php echo BASE_URL; ?>compra_pago.php?id_venta=<?php echo $id_venta; ?>',
+                    merchantlogo: '<?php echo BASE_URL; ?>assets/img/logo.png',
+                    formbuttoncolor: '#D80027',
+                    action: '<?php echo BASE_URL; ?>compra_procesar_niubiz.php',
+                    complete: function(params) {
+                        // Callback for successful tokenization (before auth)
+                        console.log('Niubiz Complete Token:', params);
+                    }
+                });
+                
+                // Open Modal
+                VisanetCheckout.open();
+                
+                // Reset button text but keep disabled until modal closes or action completes
+                btn.innerText = 'Pagando con Niubiz...';
+                
+            } else {
+                alert('Error al iniciar pago: ' + (data.error || 'Desconocido'));
+                btn.disabled = false;
+                btn.innerText = 'CONFIRMAR PAGO';
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            alert('Error de conexión con el servidor.');
+            btn.disabled = false;
+            btn.innerText = 'CONFIRMAR PAGO';
+        });
     }
 </script>
 

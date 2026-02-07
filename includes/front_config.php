@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Lima');
 // Configuración para el Frontend
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

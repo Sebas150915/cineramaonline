@@ -1,22 +1,25 @@
 <?php
-require_once '../panel/config/config.php';
+require_once '../panel/config/config2.php';
 
-// Obtener películas únicas que estén en cartelera activa
+$page_title = "Cartelera General";
+
+// Obtener películas que tengan funciones activas con ratings y géneros
 try {
-    // Agrupamos por película para no repetir posters si hay varias funciones
-    $sql = "SELECT p.id, p.nombre, p.img, p.duracion, ce.nombre as clasificacion, g.nombre as genero
-            FROM tbl_cartelera c
-            JOIN tbl_pelicula p ON c.pelicula = p.id
-            LEFT JOIN tbl_genero g ON p.genero = g.id
-            LEFT JOIN tbl_censura ce ON p.censura = ce.id
-            WHERE c.estado = '1' AND c.fecha_fin >= CURDATE()
-            GROUP BY p.id
-            ORDER BY p.nombre ASC";
-
-    $stmt = $db->query($sql);
-    $peliculas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $db->prepare("
+        SELECT DISTINCT p.*, c.codigo as censura_codigo, g.nombre as genero_nombre
+        FROM tbl_pelicula p
+        JOIN tbl_funciones f ON p.id = f.id_pelicula
+        LEFT JOIN tbl_censura c ON p.censura = c.id
+        LEFT JOIN tbl_genero g ON p.genero = g.id
+        WHERE p.estado = '1' 
+        AND f.estado = '1' 
+        AND f.fecha >= CURRENT_DATE
+        ORDER BY p.fecha_estreno DESC, p.nombre ASC
+    ");
+    $stmt->execute();
+    $peliculas = $stmt->fetchAll();
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    $peliculas = [];
 }
 ?>
 <!DOCTYPE html>

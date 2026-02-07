@@ -1,5 +1,7 @@
 <?php
-require_once '../panel/config/config.php';
+require_once '../panel/config/config2.php';
+
+$fechahorahoy=date('y-m-d H:i:s');
 
 $id_pelicula = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -53,7 +55,7 @@ try {
         AND c.fecha_fin >= CURDATE()
         ORDER BY l.nombre ASC, c.formato ASC, c.idioma ASC
     ";
-
+echo $sql;
     $stmt = $db->prepare($sql);
     $stmt->execute([$id_pelicula]);
     $funciones = $stmt->fetchAll(PDO::FETCH_ASSOC);
