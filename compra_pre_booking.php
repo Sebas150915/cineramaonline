@@ -1,17 +1,50 @@
 <?php
 require_once 'includes/front_config.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php');
-    exit;
+// Allow GET for debugging/fallback
+// if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+//    header('Location: index.php');
+//    exit;
+// }
+
+$id_funcion = isset($_REQUEST['id_funcion']) ? (int)$_REQUEST['id_funcion'] : 0;
+
+// Try to get seats from various possible inputs
+$seats_ids = [];
+
+if (!empty($_REQUEST['selected_seats'])) {
+    // 1. Comma separated string
+    $seats_ids = explode(',', $_REQUEST['selected_seats']);
+} elseif (!empty($_REQUEST['asientos']) && is_array($_REQUEST['asientos'])) {
+    // 2. Array 'asientos'
+    $seats_ids = $_REQUEST['asientos'];
+} elseif (!empty($_REQUEST['id_asiento']) && is_array($_REQUEST['id_asiento'])) {
+    // 3. Array 'id_asiento'
+    $seats_ids = $_REQUEST['id_asiento'];
 }
 
-$id_funcion = (int)$_POST['id_funcion'];
-$seats_str = $_POST['selected_seats'];
-$seats_ids = explode(',', $seats_str);
+// Sanitize IDs: Remove empty/null values and ensure integers
+$seats_ids = array_filter($seats_ids, function($v) { 
+    return $v !== '' && $v !== null; 
+});
+$seats_ids = array_map('intval', $seats_ids);
+$seats_ids = array_values($seats_ids); // Re-index array
 
 if (empty($seats_ids)) {
-    header('Location: compra_asientos.php?id_funcion=' . $id_funcion);
+    echo "<h3>Error: No se recibieron asientos seleccionados.</h3>";
+    echo "<p>Por favor toma una captura de esta pantalla y envíala al soporte.</p>";
+    echo "<hr>";
+    echo "<strong>DEBUG INFO:</strong><br>";
+    echo "Request Method: " . $_SERVER['REQUEST_METHOD'] . "<br>";
+    echo "Query String: " . $_SERVER['QUERY_STRING'] . "<br>";
+    echo "<pre>";
+    echo "GET Data:\n";
+    print_r($_GET);
+    echo "\nPOST Data:\n";
+    print_r($_POST);
+    echo "\nREQUEST Data:\n";
+    print_r($_REQUEST);
+    echo "</pre>";
     exit;
 }
 
@@ -50,10 +83,17 @@ try {
 
     // 3. Create Pending Seats (Lock them)
     foreach ($seats_ids as $sid) {
+        if ($sid <= 0) continue; // Skip invalid IDs
+
         // Get visual data for the seat record
         $stmtS = $db->prepare("SELECT * FROM tbl_sala_asiento WHERE id = ?");
         $stmtS->execute([$sid]);
-        $sData = $stmtS->fetch();
+        $sData = $stmtS->fetch(PDO::FETCH_ASSOC);
+
+        if (!$sData) {
+            // If seat not found, rollback and error
+            throw new Exception("El asiento con ID $sid no existe en la base de datos.");
+        }
 
         $stmtB = $db->prepare("INSERT INTO tbl_boletos (id_venta, id_asiento, fila, columna, numero, precio, estado) VALUES (?, ?, ?, ?, ?, 0, 'ACTIVO')");
         // Note: id_tarifa is NULL initially, will be updated in payment

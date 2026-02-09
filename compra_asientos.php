@@ -1,51 +1,12 @@
 <?php
 require_once 'includes/front_config.php';
 
+// Validar ID básico solo para asegurar que existe parámetro
 $id_funcion = isset($_GET['id_funcion']) ? (int)$_GET['id_funcion'] : 0;
 
 if ($id_funcion <= 0) {
     header('Location: index.php');
     exit;
-}
-
-// Obtener datos de la función
-try {
-    $stmt = $db->prepare("
-        SELECT f.*, p.nombre as pelicula, s.nombre as sala, s.filas, s.columnas, s.id as id_sala, l.nombre as cine
-        FROM tbl_funciones f
-        JOIN tbl_pelicula p ON f.id_pelicula = p.id
-        JOIN tbl_sala s ON f.id_sala = s.id
-        JOIN tbl_locales l ON s.local = l.id
-        WHERE f.id = ? AND f.estado = '1'
-    ");
-    $stmt->execute([$id_funcion]);
-    $funcion = $stmt->fetch();
-
-    if (!$funcion) {
-        die("Función no válida");
-    }
-
-    // Obtener asientos de la sala (estructura base)
-    $stmtAsientos = $db->prepare("SELECT * FROM tbl_sala_asiento WHERE idsala = ? ORDER BY fila, columna");
-    $stmtAsientos->execute([$funcion['id_sala']]);
-    $asientosBase = $stmtAsientos->fetchAll();
-
-    // Obtener asientos OCUPADOS para esta función (en tbl_boletos de ventas activas/pagadas)
-    // Nota: 'ANULADO' no cuenta como ocupado.
-    $stmtOcupados = $db->prepare("
-        SELECT b.id_asiento 
-        FROM tbl_boletos b
-        JOIN tbl_ventas v ON b.id_venta = v.id
-        WHERE v.id_funcion = ? 
-        AND v.estado = 'PAGADO'
-        AND b.estado = 'ACTIVO'
-    ");
-    $stmtOcupados->execute([$id_funcion]);
-    $ocupadosRaw = $stmtOcupados->fetchAll(PDO::FETCH_COLUMN);
-    $ocupados = array_flip($ocupadosRaw); // Para búsqueda rápida
-
-} catch (PDOException $e) {
-    die("Error: " . $e->getMessage());
 }
 
 $page_title = "Selección de Asientos";
@@ -54,112 +15,22 @@ include 'includes/header_front.php';
 
 <div class="container">
     <h2 class="section-title">Elige tus Butacas</h2>
-    <p style="text-align: center; color: #aaa;">
-        <?php echo htmlspecialchars($funcion['cine'] . ' - ' . $funcion['sala']); ?> |
-        <strong><?php echo htmlspecialchars($funcion['pelicula']); ?></strong>
+    
+    <!-- Info Container (Filled by JS) -->
+    <p id="movie-info" style="text-align: center; color: #aaa;">
+        Cargando información de la función...
     </p>
-
-    <div style="text-align: center; margin: 20px 0;">
-        <span style="font-size: 1.5rem; font-weight: bold; color: #e50914;">Tiempo restante: <span id="timer-display">05:00</span></span>
-    </div>
 
     <div class="screen-container">
         <div class="screen">PANTALLA</div>
     </div>
 
-    <form method="POST" action="compra_pre_booking.php" id="form-asientos">
-        <input type="hidden" name="id_funcion" value="<?php echo $id_funcion; ?>">
+    <div id="seats-wrapper">
+        <input type="hidden" id="id_funcion_static" value="<?php echo $id_funcion; ?>">
 
-        <?php
-        // Extract unique rows to build map helpers
-        // We need to map Row Letter -> Row Index (1-based)
-        $unique_rows = [];
-        foreach ($asientosBase as $a) {
-            if (!in_array($a['fila'], $unique_rows)) {
-                $unique_rows[] = $a['fila'];
-            }
-        }
-        // Assuming rows are sorted (A, B, C...)
-        // Map 'A' -> 0, 'B' -> 1 so we can use index for grid
-        // We can't rely on 'A' being 0 if it starts at F, so we re-index.
-        $unique_rows = array_values($unique_rows); // Reset keys logic
-        $rowMap = array_flip($unique_rows); // 'A' => 0, 'B' => 1
-
-        // Grid Dimensions
-        // Cols = 1 (Label) + $funcion['columnas'] + 1 (Label)
-        // But wait, if columna in DB is e.g. 20, we need 20 columns max.
-
-        $dbColumns = (int)$funcion['columnas'];
-        if ($dbColumns <= 0) $dbColumns = 1; // Safety fallback
-
-        // Grid Definition:
-        // Col 1: Label Left (30px)
-        // Cols 2..N+1: Seats (35px each)
-        // Col N+2: Label Right (30px)
-        ?>
-
-        <div class="seats-container" style="display: grid; 
-                 grid-template-columns: 30px repeat(<?php echo $dbColumns; ?>, 35px) 30px; 
-                 gap: 5px; margin: 30px auto; width: max-content;">
-
-            <!-- Render Row Labels (Left and Right) -->
-            <?php foreach ($unique_rows as $index => $letter): ?>
-                <?php $rowIndex = $index + 1; // 1-based row index for Grid 
-                ?>
-
-                <!-- Left Label -->
-                <div style="grid-column: 1; grid-row: <?php echo $rowIndex; ?>; 
-                                font-weight: bold; color: #333; display: flex; align-items: center; justify-content: center;">
-                    <?php echo $letter; ?>
-                </div>
-
-                <!-- Right Label -->
-                <div style="grid-column: <?php echo $dbColumns + 2; ?>; grid-row: <?php echo $rowIndex; ?>; 
-                                font-weight: bold; color: #333; display: flex; align-items: center; justify-content: center;">
-                    <?php echo $letter; ?>
-                </div>
-            <?php endforeach; ?>
-
-            <!-- Render Seats -->
-            <?php foreach ($asientosBase as $asiento): ?>
-                <?php
-                $id = $asiento['id'];
-                $rotulo = $asiento['fila'] . $asiento['num_asiento'];
-                $tipo = $asiento['tipo'];
-                $isOcupado = isset($ocupados[$id]);
-                $rowLetter = $asiento['fila'];
-                $colNumber = (int)$asiento['columna']; // DB column index 1-based
-
-                $class = 'seat ' . strtolower($tipo);
-                if ($isOcupado) $class .= ' occupied';
-                if ($tipo == 'PASILLO') $class = 'aisle';
-
-                // Determine Grid Position
-                if (isset($rowMap[$rowLetter])) {
-                    $rIndex = $rowMap[$rowLetter] + 1; // 1-based row
-                    $cIndex = $colNumber + 1; // +1 offset for Left Label
-
-                    if ($tipo == 'PASILLO') {
-                        // Render nothing or an aisle div if strict spacing needed
-                        // <div class="aisle" style="grid-column: ..."></div>
-                    } else {
-                ?>
-                        <div class="<?php echo $class; ?>"
-                            style="grid-column: <?php echo $cIndex; ?>; grid-row: <?php echo $rIndex; ?>;"
-                            data-id="<?php echo $id; ?>"
-                            data-rotulo="<?php echo htmlspecialchars($rotulo); ?>"
-                            onclick="toggleSeat(this)">
-                            <?php echo $rotulo; ?>
-                        </div>
-                <?php
-                    }
-                }
-                ?>
-            <?php endforeach; ?>
+        <div id="seats-container" class="seats-container" style="margin: 30px auto; width: max-content; min-height: 300px; display: flex; align-items: center; justify-content: center;">
+             <div class="loader">Cargando mapa de asientos...</div>
         </div>
-
-        <!-- Input hidden para enviar los IDs seleccionados -->
-        <input type="hidden" name="selected_seats" id="selected_seats">
 
         <div style="text-align: center; margin-top: 30px;">
             <div style="margin-bottom: 20px; color: #333; font-weight: bold;">
@@ -168,12 +39,13 @@ include 'includes/header_front.php';
                 <span><span class="seat example occupied"></span> Ocupado</span>
             </div>
 
-            <button type="submit" class="btn" id="btn-continuar" disabled>Continuar a la Compra</button>
+            <button type="button" id="btn-continuar" class="btn btn-danger" onclick="submitSeats()" disabled>Continuar a la Compra</button>
         </div>
-    </form>
+    </div>
 </div>
 
 <style>
+    /* ... (Existing Styles) ... */
     .screen {
         width: 80%;
         height: 40px;
@@ -209,14 +81,12 @@ include 'includes/header_front.php';
     /* Selected state */
     .seat.selected {
         background: #4CAF50 !important;
-        /* Green */
         color: #fff;
     }
 
     /* Occupied state */
     .seat.occupied {
         background: #b71c1c !important;
-        /* Strong red */
         color: #fff !important;
         cursor: not-allowed;
     }
@@ -240,67 +110,211 @@ include 'includes/header_front.php';
 </style>
 
 <script>
+    const ID_FUNCION = <?php echo $id_funcion; ?>;
     const MAX_SEATS = 5;
-    const TIME_LIMIT = 5 * 60; // 5 minutes in seconds
+    const POLLING_INTERVAL = 2000; 
 
     let selectedCount = 0;
-    let timeRemaining = TIME_LIMIT;
+    let salaData = null; // Will hold API data
+    let rowMap = {}; // Helper for rendering
+
+    // Main function to fetch and render
+    async function loadSalaData() {
+        try {
+            const response = await fetch(`api/get_sala_data.php?id_funcion=${ID_FUNCION}`);
+            if (!response.ok) throw new Error('Error de red al cargar datos');
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                alert(data.error);
+                window.location.href = 'index.php';
+                return;
+            }
+
+            salaData = data;
+            renderInfo();
+            renderGrid();
+            
+        } catch (error) {
+            console.error(error);
+            document.getElementById('seats-container').innerHTML = '<p style="color:red">Error al cargar el mapa de la sala. Por favor recarga la página.</p>';
+        }
+    }
+
+    function renderInfo() {
+        const infoDiv = document.getElementById('movie-info');
+        if (salaData && salaData.info) {
+            infoDiv.innerHTML = `
+                ${salaData.info.cine} - ${salaData.info.sala} | 
+                <strong>${salaData.info.pelicula}</strong>
+            `;
+        }
+    }
+
+    function renderGrid() {
+        const container = document.getElementById('seats-container');
+        container.innerHTML = ''; 
+
+        // 1. Calculate Grid Dimensions
+        // Unique rows
+        const uniqueRows = [...new Set(salaData.layout.map(s => s.fila))];
+        // Sort rows if needed (usually DB returns ordered, but let's trust API order)
+        
+        // Map row letter to index (1-based)
+        rowMap = {};
+        uniqueRows.forEach((r, i) => rowMap[r] = i + 1);
+
+        const cols = salaData.info.cols || 10; // Fallback
+        
+        // Apply Grid Styles
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = `30px repeat(${cols}, 35px) 30px`;
+        container.style.gap = '5px';
+        container.style.alignItems = 'start'; // Reset alignment
+
+        // 2. Render Labels
+        uniqueRows.forEach((letter, index) => {
+            const rowIndex = index + 1;
+            // Left
+            container.appendChild(createLabel(letter, 1, rowIndex));
+            // Right
+            container.appendChild(createLabel(letter, cols + 2, rowIndex));
+        });
+
+        // 3. Render Seats
+        const occupiedSet = new Set(salaData.occupied.map(String));
+
+        salaData.layout.forEach(seat => {
+            if (seat.tipo === 'PASILLO') return;
+
+            const rIndex = rowMap[seat.fila];
+            const cIndex = parseInt(seat.columna) + 1; // +1 for label
+
+            const seatDiv = document.createElement('div');
+            seatDiv.className = `seat ${seat.tipo.toLowerCase()}`;
+            seatDiv.dataset.id = seat.id;
+            seatDiv.dataset.rotulo = seat.fila + seat.num_asiento;
+            seatDiv.style.gridColumn = cIndex;
+            seatDiv.style.gridRow = rIndex;
+            seatDiv.textContent = seat.fila + seat.num_asiento;
+
+            if (occupiedSet.has(String(seat.id))) {
+                seatDiv.classList.add('occupied');
+            }
+
+            seatDiv.onclick = () => toggleSeat(seatDiv);
+            container.appendChild(seatDiv);
+        });
+    }
+
+    function createLabel(text, col, row) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        div.style.gridColumn = col;
+        div.style.gridRow = row;
+        div.style.fontWeight = 'bold';
+        div.style.color = '#333';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        return div;
+    }
 
     function toggleSeat(element) {
         if (element.classList.contains('occupied')) return;
-        if (element.classList.contains('aisle')) return;
-
+        
         if (element.classList.contains('selected')) {
-            // Deselect
             element.classList.remove('selected');
             selectedCount--;
         } else {
-            // Select
             if (selectedCount >= MAX_SEATS) {
-                alert('Solo puedes seleccionar un m\u00e1ximo de ' + MAX_SEATS + ' butacas.');
+                alert('Solo puedes seleccionar un máximo de ' + MAX_SEATS + ' butacas.');
                 return;
             }
             element.classList.add('selected');
             selectedCount++;
         }
-
         updateForm();
     }
 
     function updateForm() {
-        const selected = document.querySelectorAll('.seat.selected:not(.example)');
-        const ids = Array.from(selected).map(el => el.getAttribute('data-id'));
-        document.getElementById('selected_seats').value = ids.join(',');
-
-        const btn = document.getElementById('btn-continuar');
-        btn.disabled = (ids.length === 0);
+        const selected = document.querySelectorAll('.seat.selected');
+        const ids = Array.from(selected).map(el => el.dataset.id);
+        
+        document.getElementById('btn-continuar').disabled = (ids.length === 0);
     }
 
-    // Timer Logic
-    function startTimer() {
-        const display = document.getElementById('timer-display');
+    // Polling only for status updates
+    async function updateAvailability() {
+        if (!salaData) return;
 
-        const interval = setInterval(() => {
-            let minutes = Math.floor(timeRemaining / 60);
-            let seconds = timeRemaining % 60;
+        try {
+            // We can reuse the same endpoint or a lighter one. 
+            // Reusing get_sala_data is easier but heavier. 
+            // Ideally we use a 'check_status' param or the old check_seats logic inside get_sala_data
+            // Let's call the same endpoint for simplicity as requested "eliminar todo del front"
+            
+            const response = await fetch(`api/get_sala_data.php?id_funcion=${ID_FUNCION}`);
+            if (!response.ok) return;
+            const data = await response.json();
+            
+            if (data.occupied) {
+                const newOccupied = new Set(data.occupied.map(String));
+                const allSeats = document.querySelectorAll('.seat[data-id]');
+                let selectionChanged = false;
 
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            seconds = seconds < 10 ? '0' + seconds : seconds;
+                allSeats.forEach(seat => {
+                    const id = seat.dataset.id;
+                    const isOccupied = newOccupied.has(id);
+                    const isSelected = seat.classList.contains('selected');
+                    const wasOccupied = seat.classList.contains('occupied');
 
-            display.textContent = minutes + ':' + seconds;
+                    if (isOccupied) {
+                        if (!wasOccupied) seat.classList.add('occupied');
+                        if (isSelected) {
+                            seat.classList.remove('selected');
+                            selectedCount--;
+                            selectionChanged = true;
+                        }
+                    } else {
+                        if (wasOccupied) seat.classList.remove('occupied');
+                    }
+                });
 
-            if (timeRemaining <= 0) {
-                clearInterval(interval);
-                alert("El tiempo de selecci\u00f3n ha expirado. La p\u00e1gina se recargar\u00e1.");
-                location.reload();
+                if (selectionChanged) {
+                    alert('Algunos asientos seleccionados ya no están disponibles.');
+                    updateForm();
+                }
             }
+        } catch (e) {
+            console.error("Polling error", e);
+        }
+    }
 
-            timeRemaining--;
-        }, 1000);
+    function submitSeats() {
+        const selected = document.querySelectorAll('.seat.selected');
+        const ids = Array.from(selected).map(el => el.dataset.id);
+
+        if (ids.length === 0) {
+            alert("Por favor selecciona al menos una butaca.");
+            return;
+        }
+
+        // Direct URL redirection (Foolproof GET)
+        const selectedStr = ids.join(',');
+        const url = `compra_pre_booking.php?id_funcion=${ID_FUNCION}&selected_seats=${selectedStr}`;
+        
+        // Debug for user
+        alert("Redirigiendo a: " + url);
+        
+        console.log("Redirecting to:", url);
+        window.location.href = url;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        startTimer();
+        loadSalaData();
+        setInterval(updateAvailability, POLLING_INTERVAL);
     });
 </script>
 
