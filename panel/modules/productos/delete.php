@@ -12,13 +12,13 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id) {
     try {
-        // Optional: Check if used in recipes as ingredient
-        $check = $db->prepare("SELECT COUNT(*) FROM tbl_recetas WHERE id_producto_hijo = ?");
-        $check->execute([$id]);
-        if ($check->fetchColumn() > 0) {
-            // It is used in a recipe. FK is CASCADE, so it would delete it from the recipe.
-            // But let's act safe/informative or just allow it.
-            // For now, allow it but maybe log it?
+        // Fetch product to get image filename
+        $stmt_img = $db->prepare("SELECT imagen FROM tbl_productos WHERE id = ?");
+        $stmt_img->execute([$id]);
+        $prod = $stmt_img->fetch();
+
+        if ($prod && !empty($prod['imagen'])) {
+            deleteImage($prod['imagen'], 'uploads/productos/');
         }
 
         $stmt = $db->prepare("DELETE FROM tbl_productos WHERE id = ?");

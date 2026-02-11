@@ -47,14 +47,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $unidad = sanitize($_POST['unidad_medida']);
         $estado = isset($_POST['estado']) ? '1' : '0';
 
+        // Validamos imagen
+        $imagen = $product['imagen'];
+        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
+            $upload_result = uploadImage($_FILES['imagen'], 'uploads/productos/');
+            if ($upload_result['success']) {
+                // Eliminar anterior
+                if (!empty($product['imagen'])) {
+                    deleteImage($product['imagen'], 'uploads/productos/');
+                }
+                $imagen = $upload_result['filename'];
+            } else {
+                showAlert('error', 'Error', $upload_result['message']);
+            }
+        }
+
         if (empty($nombre)) {
             showAlert('error', 'Error', 'Nombre obligatorio.');
         } else {
             try {
                 $db->beginTransaction();
 
-                $stmt = $db->prepare("UPDATE tbl_productos SET nombre=?, tipo=?, codigo_barras=?, precio_venta=?, precio_base=?, igv_tipo=?, es_vendible=?, stock=?, unidad_medida=?, estado=? WHERE id=?");
-                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $estado, $id]);
+                $stmt = $db->prepare("UPDATE tbl_productos SET nombre=?, tipo=?, codigo_barras=?, precio_venta=?, precio_base=?, igv_tipo=?, es_vendible=?, stock=?, unidad_medida=?, estado=?, imagen=? WHERE id=?");
+                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $estado, $imagen, $id]);
 
                 // Update Recipe
                 // Simplest strategy: Delete all old recipe items and re-insert
@@ -76,10 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 $db->commit();
                 showAlert('success', 'Éxito', 'Producto actualizado.');
-                // Refresh
-                $stmt->execute([$id]); // Re-fetch won't work simply with same stmt obj re-exec on select, just redirect or simpler
-                header("Location: edit.php?id=$id");
-                exit;
+                redirect("edit.php?id=$id");
             } catch (PDOException $e) {
                 $db->rollBack();
                 error_log($e->getMessage());
@@ -103,7 +115,7 @@ include '../../includes/sidebar.php';
     </div>
 
     <div class="card">
-        <form method="POST" id="productForm">
+        <form method="POST" id="productForm" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
 
             <div class="grid-form">
@@ -124,6 +136,17 @@ include '../../includes/sidebar.php';
                         <option value="insumo" <?php echo $product['tipo'] == 'insumo' ? 'selected' : ''; ?>>Insumo</option>
                         <option value="combo" <?php echo $product['tipo'] == 'combo' ? 'selected' : ''; ?>>Combo / Receta</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Imagen del Producto</label>
+                    <?php if (!empty($product['imagen'])): ?>
+                        <div class="current-image" style="margin-bottom: 10px;">
+                            <img src="<?php echo UPLOADS_URL . 'productos/' . $product['imagen']; ?>" alt="Imagen actual" style="max-height: 80px; border-radius: 5px; border: 1px solid #ddd;">
+                        </div>
+                    <?php endif; ?>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                    <small class="text-muted">Dejar vacío para mantener la imagen actual</small>
                 </div>
 
                 <div class="form-group">

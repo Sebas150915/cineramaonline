@@ -26,6 +26,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stock = !empty($_POST['stock']) ? $_POST['stock'] : 0.00;
         $unidad = sanitize($_POST['unidad_medida']);
 
+        // Validamos imagen
+        $imagen = '';
+        if (isset($_FILES['imagen']) && $_FILES['imagen']['error'] == 0) {
+            $upload_result = uploadImage($_FILES['imagen'], 'uploads/productos/');
+            if ($upload_result['success']) {
+                $imagen = $upload_result['filename'];
+            } else {
+                showAlert('error', 'Error', $upload_result['message']);
+            }
+        }
+
         // Validation
         if (empty($nombre) || empty($tipo)) {
             showAlert('error', 'Error', 'Nombre y Tipo son obligatorios.');
@@ -34,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $db->beginTransaction();
 
                 // Insert Product
-                $stmt = $db->prepare("INSERT INTO tbl_productos (nombre, tipo, codigo_barras, precio_venta, precio_base, igv_tipo, es_vendible, stock, unidad_medida) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad]);
+                $stmt = $db->prepare("INSERT INTO tbl_productos (nombre, tipo, codigo_barras, precio_venta, precio_base, igv_tipo, es_vendible, stock, unidad_medida, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $imagen]);
                 $producto_id = $db->lastInsertId();
 
                 // Save Recipe if Combo
@@ -78,7 +89,7 @@ include '../../includes/sidebar.php';
     </div>
 
     <div class="card">
-        <form method="POST" id="productForm">
+        <form method="POST" id="productForm" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
 
             <div class="grid-form">
@@ -100,6 +111,12 @@ include '../../includes/sidebar.php';
                         <option value="insumo">Insumo (Materia Prima)</option>
                         <option value="combo">Combo / Preparado (Receta)</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Imagen del Producto</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                    <small class="text-muted">Se recomienda imagen cuadrada (JPG, PNG)</small>
                 </div>
 
                 <div class="form-group">

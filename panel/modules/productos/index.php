@@ -39,6 +39,7 @@ try {
         <table class="datatable">
             <thead>
                 <tr>
+                    <th width="80">Imagen</th>
                     <th>Nombre</th>
                     <th>Tipo</th>
                     <th>Precio Venta</th>
@@ -50,6 +51,15 @@ try {
             <tbody>
                 <?php foreach ($productos as $prod): ?>
                     <tr>
+                        <td>
+                            <?php if (!empty($prod['imagen'])): ?>
+                                <img src="<?php echo UPLOADS_URL . 'productos/' . $prod['imagen']; ?>" alt="Product" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;">
+                            <?php else: ?>
+                                <div style="width: 50px; height: 50px; background: #eee; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #ccc;">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <strong><?php echo htmlspecialchars($prod['nombre']); ?></strong><br>
                             <?php if ($prod['codigo_barras']): ?>
