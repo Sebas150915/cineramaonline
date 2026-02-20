@@ -32,6 +32,9 @@ if ($product['tipo'] === 'combo') {
 
 $raw_insumos = $db->query("SELECT id, nombre, unidad_medida FROM tbl_productos WHERE estado = '1' AND id != $id ORDER BY nombre ASC")->fetchAll();
 
+// Fetch categories
+$categorias = $db->query("SELECT id, nombre FROM tbl_categoria WHERE estado = '1' ORDER BY nombre ASC")->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
         showAlert('error', 'Error', 'Error seguridad token.');
@@ -46,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stock = !empty($_POST['stock']) ? $_POST['stock'] : 0.00;
         $unidad = sanitize($_POST['unidad_medida']);
         $estado = isset($_POST['estado']) ? '1' : '0';
+        $idcategoria = !empty($_POST['idcategoria']) ? $_POST['idcategoria'] : null;
+        $afectacion = !empty($_POST['afectacion']) ? $_POST['afectacion'] : null;
 
         // Validamos imagen
         $imagen = $product['imagen'];
@@ -68,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             try {
                 $db->beginTransaction();
 
-                $stmt = $db->prepare("UPDATE tbl_productos SET nombre=?, tipo=?, codigo_barras=?, precio_venta=?, precio_base=?, igv_tipo=?, es_vendible=?, stock=?, unidad_medida=?, estado=?, imagen=? WHERE id=?");
-                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $estado, $imagen, $id]);
+                $stmt = $db->prepare("UPDATE tbl_productos SET nombre=?, tipo=?, codigo_barras=?, precio_venta=?, precio_base=?, igv_tipo=?, es_vendible=?, stock=?, unidad_medida=?, estado=?, imagen=?, idcategoria=?, afectacion=? WHERE id=?");
+                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $estado, $imagen, $idcategoria, $afectacion, $id]);
 
                 // Update Recipe
                 // Simplest strategy: Delete all old recipe items and re-insert
@@ -127,6 +132,32 @@ include '../../includes/sidebar.php';
                 <div class="form-group">
                     <label>Código Barras</label>
                     <input type="text" name="codigo_barras" class="form-control" value="<?php echo htmlspecialchars($product['codigo_barras']); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label class="required">Tipo</label>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="idcategoria" class="form-control">
+                        <option value="">-- Seleccionar --</option>
+                        <?php foreach ($categorias as $cat): ?>
+                            <option value="<?php echo $cat['id']; ?>" <?php echo $product['idcategoria'] == $cat['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($cat['nombre']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Afectación</label>
+                    <select name="afectacion" class="form-control">
+                        <option value="10" <?php echo $product['afectacion'] == '10' ? 'selected' : ''; ?>>10 AFECTO</option>
+                        <option value="20" <?php echo $product['afectacion'] == '20' ? 'selected' : ''; ?>>20 EXONERADO</option>
+                        <option value="30" <?php echo $product['afectacion'] == '30' ? 'selected' : ''; ?>>30 INAFECTO</option>
+                    </select>
                 </div>
 
                 <div class="form-group">

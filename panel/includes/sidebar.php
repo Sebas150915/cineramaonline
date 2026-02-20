@@ -49,6 +49,12 @@ $isSupervisor = ($isSuper || $role === 'supervisor');
                         <span>Dulcería</span>
                     </a>
                 </li>
+                <li class="menu-item">
+                    <a href="<?php echo BASE_URL; ?>modules/categorias/">
+                        <i class="fas fa-tags"></i>
+                        <span>Categorías</span>
+                    </a>
+                </li>
             </ul>
         </div>
     <?php else: ?>

@@ -11,6 +11,9 @@ if ($_SESSION['rol'] !== 'superadmin' && $_SESSION['rol'] !== 'admin' && $_SESSI
 // Fetch ingredients (insumos) and products that can be part of a recipe
 $raw_insumos = $db->query("SELECT id, nombre, unidad_medida FROM tbl_productos WHERE estado = '1' ORDER BY nombre ASC")->fetchAll();
 
+// Fetch categories
+$categorias = $db->query("SELECT id, nombre FROM tbl_categoria WHERE estado = '1' ORDER BY nombre ASC")->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // CSRF Check
     if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
@@ -41,12 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (empty($nombre) || empty($tipo)) {
             showAlert('error', 'Error', 'Nombre y Tipo son obligatorios.');
         } else {
+            $idcategoria = !empty($_POST['idcategoria']) ? $_POST['idcategoria'] : null;
+            $afectacion = !empty($_POST['afectacion']) ? $_POST['afectacion'] : null;
+
             try {
                 $db->beginTransaction();
 
                 // Insert Product
-                $stmt = $db->prepare("INSERT INTO tbl_productos (nombre, tipo, codigo_barras, precio_venta, precio_base, igv_tipo, es_vendible, stock, unidad_medida, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $imagen]);
+                $stmt = $db->prepare("INSERT INTO tbl_productos (nombre, tipo, codigo_barras, precio_venta, precio_base, igv_tipo, es_vendible, stock, unidad_medida, imagen, idcategoria, afectacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$nombre, $tipo, $codigo, $precio_venta, $precio_base, $igv_tipo, $es_vendible, $stock, $unidad, $imagen, $idcategoria, $afectacion]);
                 $producto_id = $db->lastInsertId();
 
                 // Save Recipe if Combo
@@ -102,6 +108,25 @@ include '../../includes/sidebar.php';
                 <div class="form-group">
                     <label>Código Barras</label>
                     <input type="text" name="codigo_barras" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select name="idcategoria" class="form-control">
+                        <option value="">-- Seleccionar --</option>
+                        <?php foreach ($categorias as $cat): ?>
+                            <option value="<?php echo $cat['id']; ?>"><?php echo htmlspecialchars($cat['nombre']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Afectación</label>
+                    <select name="afectacion" class="form-control">
+                        <option value="10">10 AFECTO</option>
+                        <option value="20">20 EXONERADO</option>
+                        <option value="30">30 INAFECTO</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
